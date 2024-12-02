@@ -25,6 +25,7 @@
   "homepage": "https://github.com/hase0278/anix-api#readme",
   "dependencies": {
     "@consumet/extensions": "github:hase0278/consumet.ts",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "ioredis": "^5.4.1",

@@ -7,9 +7,11 @@ import { fileURLToPath } from 'url';
 import { ANIME, StreamingServers } from '@consumet/extensions';
 import Redis from 'ioredis';
 import cache from './utils/cache.js';
+import cors from 'cors';
 
 const app = express();
 dotenv.config();
+app.use(cors());
 const anix = new ANIME.Anix();
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
