@@ -1,17 +1,29 @@
+import dotenv from 'dotenv';
 import https from "node:https";
 import http from "node:http";
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { ANIME, StreamingServers } from '@consumet/extensions';
+import Redis from 'ioredis';
+import cache from './utils/cache.js';
 
 const app = express();
+dotenv.config();
 const anix = new ANIME.Anix();
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
 const PORT = process.env.PORT || 3000;
+const redisUri = `rediss://default:${process.env.REDIS_PASSWORD}@${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`;
+const redis = process.env.REDIS_HOST && new Redis(redisUri);
+
+const redisCacheTime = 60 * 60;
+const redisPrefix = 'anix:';
 
 app.listen(PORT, () => {
+    if (process.env.REDIS_HOST){
+        console.warn('Redis found. Cache enabled.');
+    }
     console.log("Server Listening on PORT:", PORT);
 });
 
@@ -130,7 +142,13 @@ app.get("/m3u8-proxy", async (req, res) => {
 app.get("/recent-episodes", async (req, res) => {
     try {
         const page = req.query?.page ?? 1;
-        return res.status(200).send(await anix.fetchRecentEpisodes(page));
+        const response = redis ? await cache.fetch(
+            redis,
+            `${redisPrefix}recent-episodes;${page};`,
+            async () => await anix.fetchRecentEpisodes(page),
+            redisCacheTime,
+        ) : await anix.fetchRecentEpisodes(page);
+        return res.status(200).send(response);
     } catch (e) {
         res.status(500).send({ message: e.message });
     }
@@ -143,7 +161,13 @@ app.get("/search", async (req, res) => {
         if (!keyword) {
             return res.status(400).send({ message: "Search keyword is required" });
         }
-        return res.status(200).send(await anix.search(keyword, page));
+        const response = redis ? await cache.fetch(
+            redis,
+            `${redisPrefix}search;${keyword};${page};`,
+            async () => await anix.search(keyword, page),
+            redisCacheTime,
+        ) : await anix.search(keyword, page);
+        return res.status(200).send(response);
     } catch (e) {
         res.status(500).send({ message: e.message });
     }
@@ -155,7 +179,13 @@ app.get("/info", async (req, res) => {
         if (!id) {
             return res.status(400).send({ message: "id is required" });
         }
-        return res.status(200).send(await anix.fetchAnimeInfo(id));
+        const response = redis ? await cache.fetch(
+            redis,
+            `${redisPrefix}info;${id};`,
+            async () => await anix.fetchAnimeInfo(id),
+            redisCacheTime,
+        ) : await anix.fetchAnimeInfo(id);
+        return res.status(200).send(response);
     } catch (e) {
         res.status(500).send({ message: e.message });
     }
@@ -184,16 +214,30 @@ app.get("/watch", async (req, res) => {
                 default:
                     return res.status(400).send({ message: "Invalid server" });
             }
-            return res.status(200).send(await anix.fetchEpisodeSources(id, epId, finalServer));
+            const response = redis ? await cache.fetch(
+                redis,
+                `${redisPrefix}watch;${id};${epId};${finalServer};`,
+                async () => await anix.fetchEpisodeSources(id, epId, finalServer),
+                redisCacheTime,
+            ) : await anix.fetchEpisodeSources(id, epId, finalServer);
+            return res.status(200).send(response);
         }
-        return res.status(200).send(await anix.fetchEpisodeSources(id, epId));
+        else{
+            const response = redis ? await cache.fetch(
+                redis,
+                `${redisPrefix}watch;${id};${epId};${StreamingServers.VidStream};`,
+                async () => await anix.fetchEpisodeSources(id, epId),
+                redisCacheTime,
+            ) : await anix.fetchEpisodeSources(id, epId);
+            return res.status(200).send(response);
+        }
     } catch (e) {
         res.status(500).send({ message: e.message });
     }
 });
 
 app.get("/servers", async (req, res) => {
-    try{
+    try {
         const id = req.query?.id ?? undefined;
         const epId = req.query?.epId ?? undefined;
         if (!id) {
@@ -202,7 +246,13 @@ app.get("/servers", async (req, res) => {
         if (!epId) {
             return res.status(400).send({ message: "epId is required" });
         }
-        return res.status(200).send(await anix.fetchEpisodeServers(id, epId));
+        const response = redis ? await cache.fetch(
+            redis,
+            `${redisPrefix}server;${id};${epId}`,
+            async () => await anix.fetchEpisodeServers(id, epId),
+            redisCacheTime,
+        ) : await anix.fetchEpisodeServers(id, epId);
+        return res.status(200).send(response);
     } catch (e) {
         res.status(500).send({ message: e.message });
     }

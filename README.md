@@ -24,7 +24,7 @@ PORT="3030"
 
 ## Instant deploy
 Vercel
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/hase0278/hase0278-m3u8-proxy)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/hase0278/anix-api)
 
 ## Usage
 To proxy m3u8 files, use the `/m3u8-proxy` route. All you have to do is input the URL and headers. For example:
