@@ -205,13 +205,13 @@ app.get("/watch", async (req, res) => {
             return res.status(400).send({ message: "epId is required" });
         }
         if (server) {
-            let finalServer = StreamingServers.VidStream;
+            let finalServer = StreamingServers.BuiltIn;
             switch (server) {
                 case "streamwish":
                     finalServer = StreamingServers.StreamWish;
                     break;
                 case "vidstream":
-                    finalServer = StreamingServers.VidStream;
+                    finalServer = StreamingServers.BuiltIn;
                     break;
                 default:
                     return res.status(400).send({ message: "Invalid server" });
