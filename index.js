@@ -144,12 +144,13 @@ app.get("/m3u8-proxy", async (req, res) => {
 app.get("/recent-episodes", async (req, res) => {
     try {
         const page = req.query?.page ?? 1;
+        const type = req.query?.type ?? 1;
         const response = redis ? await cache.fetch(
             redis,
-            `${redisPrefix}recent-episodes;${page};`,
-            async () => await anix.fetchRecentEpisodes(page),
+            `${redisPrefix}recent-episodes;page;${page};type;${type}`,
+            async () => await anix.fetchRecentEpisodes(page, type),
             redisCacheTime,
-        ) : await anix.fetchRecentEpisodes(page);
+        ) : await anix.fetchRecentEpisodes(page, type);
         return res.status(200).send(response);
     } catch (e) {
         res.status(500).send({ message: e.message });
