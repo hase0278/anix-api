@@ -211,6 +211,9 @@ app.get("/watch", async (req, res) => {
                 case "streamwish":
                     finalServer = StreamingServers.StreamWish;
                     break;
+                case "mp4upload":
+                    finalServer = StreamingServers.Mp4Upload;
+                    break;
                 case "vidstream":
                     finalServer = StreamingServers.BuiltIn;
                     break;
