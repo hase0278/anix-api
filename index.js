@@ -108,6 +108,7 @@ app.get("/m3u8-proxy", async (req, res) => {
                     const proxy = https.request(options, (r) => {
                         if(url.pathname.endsWith(".mp4")){
                             r.headers["content-type"] = "video/mp4";
+                            r.headers["accept-ranges"] = "bytes";
                         }
                         else{
                             r.headers["content-type"] = "video/mp2t";
