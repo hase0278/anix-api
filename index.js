@@ -109,6 +109,10 @@ app.get("/m3u8-proxy", async (req, res) => {
                         if(url.pathname.endsWith(".mp4")){
                             r.headers["content-type"] = "video/mp4";
                             r.headers["accept-ranges"] = "bytes";
+                            const fileName = req.query.filename || undefined;
+                            if(fileName){
+                                r.headers['content-disposition'] = `attachment; filename="${fileName}.mp4"`;
+                            }
                         }
                         else{
                             r.headers["content-type"] = "video/mp2t";
@@ -128,6 +132,11 @@ app.get("/m3u8-proxy", async (req, res) => {
                     const proxy = http.request(options, (r) => {
                         if(url.pathname.endsWith(".mp4")){
                             r.headers["content-type"] = "video/mp4";
+                            r.headers["accept-ranges"] = "bytes";
+                            const fileName = req.query.filename || undefined;
+                            if(fileName){
+                                r.headers['content-disposition'] = `attachment; filename="${fileName}.mp4"`;
+                            }
                         }
                         else{
                             r.headers["content-type"] = "video/mp2t";
