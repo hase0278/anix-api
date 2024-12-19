@@ -244,6 +244,9 @@ app.get("/watch", async (req, res) => {
                 case "vidstream":
                     finalServer = StreamingServers.BuiltIn;
                     break;
+                case "vidhide":
+                    finalServer = StreamingServers.VidHide;
+                    break;
                 default:
                     return res.status(400).send({ message: "Invalid server" });
             }
