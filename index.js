@@ -23,7 +23,7 @@ const redisCacheTime = 60 * 60;
 const redisPrefix = 'anix:';
 
 app.listen(PORT, () => {
-    if (process.env.REDIS_HOST){
+    if (process.env.REDIS_HOST) {
         console.warn('Redis found. Cache enabled.');
     }
     console.log("Server Listening on PORT:", PORT);
@@ -58,10 +58,10 @@ app.get("/m3u8-proxy", async (req, res) => {
                 }
             });
         }
-        if(url.pathname.endsWith(".mp4")){
+        if (url.pathname.endsWith(".mp4")) {
             process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
         }
-        else{
+        else {
             process.env.NODE_TLS_REJECT_UNAUTHORIZED = "1";
         }
 
@@ -100,21 +100,22 @@ app.get("/m3u8-proxy", async (req, res) => {
                 path: uri.pathname + uri.search,
                 method: req.method,
                 headers: headers,
+                timeout: 10000
             };
 
             // Proxy request and pipe to client
             try {
                 if (forceHTTPS) {
                     const proxy = https.request(options, (r) => {
-                        if(url.pathname.endsWith(".mp4")){
+                        if (url.pathname.endsWith(".mp4")) {
                             r.headers["content-type"] = "video/mp4";
                             r.headers["accept-ranges"] = "bytes";
                             const fileName = req.query.filename || undefined;
-                            if(fileName){
+                            if (fileName) {
                                 r.headers['content-disposition'] = `attachment; filename="${fileName}.mp4"`;
                             }
                         }
-                        else{
+                        else {
                             r.headers["content-type"] = "video/mp2t";
                         }
                         r.headers["Access-Control-Allow-Origin"] = "*";
@@ -128,17 +129,26 @@ app.get("/m3u8-proxy", async (req, res) => {
                     req.pipe(proxy, {
                         end: true,
                     });
+                    proxy.on('timeout', () => {
+                        proxy.destroy();
+                        res.status(504).send({ message: "Request timed out." });
+                    });
+
+                    proxy.on('error', (err) => {
+                        console.error('Proxy request error:', err.message);
+                        res.status(500).send({ message: "Proxy failed.", error: err.message });
+                    });
                 } else {
                     const proxy = http.request(options, (r) => {
-                        if(url.pathname.endsWith(".mp4")){
+                        if (url.pathname.endsWith(".mp4")) {
                             r.headers["content-type"] = "video/mp4";
                             r.headers["accept-ranges"] = "bytes";
                             const fileName = req.query.filename || undefined;
-                            if(fileName){
+                            if (fileName) {
                                 r.headers['content-disposition'] = `attachment; filename="${fileName}.mp4"`;
                             }
                         }
-                        else{
+                        else {
                             r.headers["content-type"] = "video/mp2t";
                         }
                         r.headers["Access-Control-Allow-Origin"] = "*";
@@ -147,6 +157,15 @@ app.get("/m3u8-proxy", async (req, res) => {
                         r.pipe(res, {
                             end: true,
                         });
+                    });
+                    proxy.on('timeout', () => {
+                        proxy.destroy();
+                        res.status(504).send({ message: "Request timed out." });
+                    });
+
+                    proxy.on('error', (err) => {
+                        console.error('Proxy request error:', err.message);
+                        res.status(500).send({ message: "Proxy failed.", error: err.message });
                     });
                     req.pipe(proxy, {
                         end: true,
@@ -229,7 +248,7 @@ app.get("/watch", async (req, res) => {
         const epId = req.query?.epId ?? undefined;
         const server = req.query?.server ?? undefined;
         const type = req.query?.type ?? 'sub';
-        if(type !== 'sub' && type !== 'dub'){
+        if (type !== 'sub' && type !== 'dub') {
             return res.status(400).send({ message: "type must be sub or dub" });
         }
         if (!id) {
@@ -264,7 +283,7 @@ app.get("/watch", async (req, res) => {
             ) : await anix.fetchEpisodeSources(id, epId, finalServer, type);
             return res.status(200).send(response);
         }
-        else{
+        else {
             const response = redis ? await cache.fetch(
                 redis,
                 `${redisPrefix}watch;${id};${epId};${StreamingServers.VidStream};type;${type}`,
@@ -283,7 +302,7 @@ app.get("/servers", async (req, res) => {
         const id = req.query?.id ?? undefined;
         const epId = req.query?.epId ?? undefined;
         const type = req.query?.type ?? 'sub';
-        if(type !== 'sub' && type !== 'dub'){
+        if (type !== 'sub' && type !== 'dub') {
             return res.status(400).send({ message: "type must be sub or dub" });
         }
         if (!id) {
