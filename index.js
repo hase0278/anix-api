@@ -155,6 +155,7 @@ app.get("/m3u8-proxy", async (req, res) => {
             } catch (e) {
                 res.writeHead(500);
                 res.end(e.message);
+                req.end();
             }
         }
         else {
@@ -165,6 +166,7 @@ app.get("/m3u8-proxy", async (req, res) => {
     } catch (e) {
         console.log(e);
         res.status(500).send(e.message);
+        req.end();
     }
 });
 
