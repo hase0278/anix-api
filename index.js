@@ -265,7 +265,7 @@ app.get("/watch", async (req, res) => {
         else{
             const response = redis ? await cache.fetch(
                 redis,
-                `${redisPrefix}watch;${id};${epId};${StreamingServers.VidStream};`,
+                `${redisPrefix}watch;${id};${epId};${StreamingServers.VidStream};type;${type}`,
                 async () => await anix.fetchEpisodeSources(id, epId, StreamingServers.BuiltIn, type),
                 redisCacheTime,
             ) : await anix.fetchEpisodeSources(id, epId, StreamingServers.BuiltIn, type);
@@ -292,12 +292,27 @@ app.get("/servers", async (req, res) => {
         }
         const response = redis ? await cache.fetch(
             redis,
-            `${redisPrefix}server;${id};${epId}`,
+            `${redisPrefix}server;${id};${epId};type;${type}`,
             async () => await anix.fetchEpisodeServerType(id, epId, type),
             redisCacheTime,
         ) : await anix.fetchEpisodeServerType(id, epId, type);
         return res.status(200).send(response);
     } catch (e) {
+        res.status(500).send({ message: e.message });
+    }
+});
+
+app.get("/random-anime", async (req, res) => {
+    try {
+        const response = redis ? await cache.fetch(
+            redis,
+            `${redisPrefix}random`,
+            async () => await anix.fetchRandomAnimeInfo(),
+            redisCacheTime * 24,
+        ) : await anix.fetchRandomAnimeInfo();
+        return res.status(200).send(response);
+    }
+    catch (e) {
         res.status(500).send({ message: e.message });
     }
 });
