@@ -226,6 +226,10 @@ app.get("/watch", async (req, res) => {
         const id = req.query?.id ?? undefined;
         const epId = req.query?.epId ?? undefined;
         const server = req.query?.server ?? undefined;
+        const type = req.query?.type ?? 'sub';
+        if(type !== 'sub' && type !== 'dub'){
+            return res.status(400).send({ message: "type must be sub or dub" });
+        }
         if (!id) {
             return res.status(400).send({ message: "id is required" });
         }
@@ -253,18 +257,18 @@ app.get("/watch", async (req, res) => {
             const response = redis ? await cache.fetch(
                 redis,
                 `${redisPrefix}watch;${id};${epId};${finalServer};`,
-                async () => await anix.fetchEpisodeSources(id, epId, finalServer),
+                async () => await anix.fetchEpisodeSources(id, epId, finalServer, type),
                 redisCacheTime,
-            ) : await anix.fetchEpisodeSources(id, epId, finalServer);
+            ) : await anix.fetchEpisodeSources(id, epId, finalServer, type);
             return res.status(200).send(response);
         }
         else{
             const response = redis ? await cache.fetch(
                 redis,
                 `${redisPrefix}watch;${id};${epId};${StreamingServers.VidStream};`,
-                async () => await anix.fetchEpisodeSources(id, epId),
+                async () => await anix.fetchEpisodeSources(id, epId, StreamingServers.BuiltIn, type),
                 redisCacheTime,
-            ) : await anix.fetchEpisodeSources(id, epId);
+            ) : await anix.fetchEpisodeSources(id, epId, StreamingServers.BuiltIn, type);
             return res.status(200).send(response);
         }
     } catch (e) {
@@ -276,6 +280,10 @@ app.get("/servers", async (req, res) => {
     try {
         const id = req.query?.id ?? undefined;
         const epId = req.query?.epId ?? undefined;
+        const type = req.query?.type ?? 'sub';
+        if(type !== 'sub' && type !== 'dub'){
+            return res.status(400).send({ message: "type must be sub or dub" });
+        }
         if (!id) {
             return res.status(400).send({ message: "id is required" });
         }
@@ -285,9 +293,9 @@ app.get("/servers", async (req, res) => {
         const response = redis ? await cache.fetch(
             redis,
             `${redisPrefix}server;${id};${epId}`,
-            async () => await anix.fetchEpisodeServers(id, epId),
+            async () => await anix.fetchEpisodeServerType(id, epId, type),
             redisCacheTime,
-        ) : await anix.fetchEpisodeServers(id, epId);
+        ) : await anix.fetchEpisodeServerType(id, epId, type);
         return res.status(200).send(response);
     } catch (e) {
         res.status(500).send({ message: e.message });
