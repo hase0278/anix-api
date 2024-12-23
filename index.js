@@ -41,9 +41,14 @@ app.get("/m3u8-proxy", async (req, res) => {
     let responseSent = false;
 
     const safeSendResponse = (statusCode, data) => {
-        if (!responseSent) {
-            responseSent = true;
-            res.status(statusCode).send(data);
+        try{
+            if (!responseSent) {
+                responseSent = true;
+                res.status(statusCode).send(data);
+            }
+        }
+        catch(err){
+
         }
     };
     try {
@@ -79,7 +84,6 @@ app.get("/m3u8-proxy", async (req, res) => {
 
         let modifiedM3u8;
         let forceHTTPS = false;
-        res.setHeader("Access-Control-Allow-Origin", "*");
         if (url.pathname.endsWith(".m3u8")) {
             modifiedM3u8 = await targetResponse.text();
             const targetUrlTrimmed = encodeURIComponent(url.origin + url.pathname.replace(/[^/]+\.m3u8$/, "").trim());
@@ -90,6 +94,7 @@ app.get("/m3u8-proxy", async (req, res) => {
                 return `/m3u8-proxy?url=${targetUrlTrimmed}${encodeURIComponent(line)}${headersParam ? `&headers=${encodeURIComponent(headersParam)}` : ""}`;
             }).join("\n");
             res.status(200)
+                .set('Access-Control-Allow-Origin', '*')
                 .set('Content-Type', targetResponse.headers.get("Content-Type") || "application/vnd.apple.mpegurl")
                 .send(modifiedM3u8 || await targetResponse.text());
         }
