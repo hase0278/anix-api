@@ -38,13 +38,21 @@ app.get('/health', (req, res) => {
 });
 
 app.get("/m3u8-proxy", async (req, res) => {
+    let responseSent = false;
+
+    const safeSendResponse = (statusCode, data) => {
+        if (!responseSent) {
+            responseSent = true;
+            res.status(statusCode).send(data);
+        }
+    };
     try {
         const url = new URL(req.query.url);
         const headersParam = decodeURIComponent(req.query.headers || "");
         const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36';
 
         if (!url) {
-            res.status(400).send({ message: "Invalid URL" });
+            safeSendResponse(400, { message: "Invalid URL" });
         }
 
         const headers = {
@@ -81,8 +89,9 @@ app.get("/m3u8-proxy", async (req, res) => {
                 }
                 return `/m3u8-proxy?url=${targetUrlTrimmed}${encodeURIComponent(line)}${headersParam ? `&headers=${encodeURIComponent(headersParam)}` : ""}`;
             }).join("\n");
-            res.setHeader("Content-Type", targetResponse.headers.get("Content-Type") || "application/vnd.apple.mpegurl");
-            res.status(200).send(modifiedM3u8 || await targetResponse.text());
+            res.status(200)
+                .set('Content-Type', targetResponse.headers.get("Content-Type") || "application/vnd.apple.mpegurl")
+                .send(modifiedM3u8 || await targetResponse.text());
         }
         else if (url.pathname.endsWith(".ts") || url.pathname.endsWith(".mp4")) {
             if (req.query.url.startsWith("https://")) {
@@ -130,13 +139,13 @@ app.get("/m3u8-proxy", async (req, res) => {
                         end: true,
                     });
                     proxy.on('timeout', () => {
-                        res.status(504).send({ message: "Request timed out." });
+                        safeSendResponse(504, { message: "Request timed out." });
                         proxy.destroy();
                     });
 
                     proxy.on('error', (err) => {
                         console.error('Proxy request error:', err.message);
-                        res.status(500).send({ message: "Proxy failed.", error: err.message });
+                        safeSendResponse(500, { message: "Proxy failed.", error: err.message });
                     });
                 } else {
                     const proxy = http.request(options, (r) => {
@@ -159,13 +168,16 @@ app.get("/m3u8-proxy", async (req, res) => {
                         });
                     });
                     proxy.on('timeout', () => {
-                        res.status(504).send({ message: "Request timed out." });
+                        safeSendResponse(504, { message: "Request timed out." });
+                        if (!responseSent) {
+                            responseSent = true;
+                        }
                         proxy.destroy();
                     });
 
                     proxy.on('error', (err) => {
                         console.error('Proxy request error:', err.message);
-                        res.status(500).send({ message: "Proxy failed.", error: err.message });
+                        safeSendResponse(500, { message: "Proxy failed.", error: err.message });
                     });
                     req.pipe(proxy, {
                         end: true,
@@ -174,18 +186,16 @@ app.get("/m3u8-proxy", async (req, res) => {
             } catch (e) {
                 res.writeHead(500);
                 res.end(e.message);
-                req.end();
             }
         }
         else {
             res.setHeader("Content-Type", targetResponse.headers.get("Content-Type"));
             res.setHeader("Content-Length", targetResponse.headers.get("Content-Length") || 0);
-            res.status(200).send(await targetResponse.text());
+            safeSendResponse(200, await targetResponse.text());
         }
     } catch (e) {
         console.log(e);
-        res.status(500).send(e.message);
-        req.end();
+        safeSendResponse(500, { message: e.message });
     }
 });
 
