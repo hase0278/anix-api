@@ -130,8 +130,8 @@ app.get("/m3u8-proxy", async (req, res) => {
                         end: true,
                     });
                     proxy.on('timeout', () => {
-                        proxy.destroy();
                         res.status(504).send({ message: "Request timed out." });
+                        proxy.destroy();
                     });
 
                     proxy.on('error', (err) => {
@@ -159,8 +159,8 @@ app.get("/m3u8-proxy", async (req, res) => {
                         });
                     });
                     proxy.on('timeout', () => {
-                        proxy.destroy();
                         res.status(504).send({ message: "Request timed out." });
+                        proxy.destroy();
                     });
 
                     proxy.on('error', (err) => {
