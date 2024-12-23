@@ -169,9 +169,6 @@ app.get("/m3u8-proxy", async (req, res) => {
                     });
                     proxy.on('timeout', () => {
                         safeSendResponse(504, { message: "Request timed out." });
-                        if (!responseSent) {
-                            responseSent = true;
-                        }
                         proxy.destroy();
                     });
 
